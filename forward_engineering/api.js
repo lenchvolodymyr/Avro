@@ -86,7 +86,14 @@ const handleRecursiveSchema = (schema, avroSchema, parentSchema = {}, key) => {
 
 const handleChoice = (schema, choice) => {
     let allSubSchemaFields = [];
-    const choiceMeta = schema[`${choice}_meta`] ? schema[`${choice}_meta`].name : null;
+    const choiceMeta = schema[`${choice}_meta`];
+    let choiceName;
+
+    if (choiceMeta && choiceMeta.code.length) {
+        choiceName = choiceMeta.code;
+    } else if (choiceMeta && choiceMeta.name.length) {
+        choiceName = choiceMeta.name;
+    }
 
     schema[choice].forEach(subSchema => {
         if (subSchema.oneOf) {
@@ -101,13 +108,13 @@ const handleChoice = (schema, choice) => {
 
     let multipleFieldsHash = {};
     allSubSchemaFields.forEach(field => {
-        if (!multipleFieldsHash[choiceMeta || field.name]) {
-            multipleFieldsHash[choiceMeta || field.name] = {
-                name: choiceMeta || field.name,
+        if (!multipleFieldsHash[choiceName || field.name]) {
+            multipleFieldsHash[choiceName || field.name] = {
+                name: choiceName || field.name,
                 type: []
             };
         }
-        let multipleField = multipleFieldsHash[choiceMeta || field.name];
+        let multipleField = multipleFieldsHash[choiceName || field.name];
         const filedType = field.type;
 
         if (isComplexType(filedType)) {
