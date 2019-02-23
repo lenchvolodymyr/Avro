@@ -89,9 +89,9 @@ const handleChoice = (schema, choice) => {
     const choiceMeta = schema[`${choice}_meta`];
     let choiceName;
 
-    if (choiceMeta && choiceMeta.code.length) {
+    if (choiceMeta && choiceMeta.code && choiceMeta.code.length) {
         choiceName = choiceMeta.code;
-    } else if (choiceMeta && choiceMeta.name.length) {
+    } else if (choiceMeta && choiceMeta.name && choiceMeta.name.length) {
         choiceName = choiceMeta.name;
     }
 
