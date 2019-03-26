@@ -129,6 +129,10 @@ const handleType = (data, schema, parentSchema) => {
 	if (Array.isArray(data.type)) {
 		schema = handleMultipleTypes(data, schema, parentSchema);
 	} else if (typeof data.type === 'object') {
+		if (data.type.name) {		
+			schema.typeName = data.type.name;		
+		}		
+			
 		handleRecursiveSchema(data.type, schema);
 	} else {
 		schema = getType(schema, data, data.type);
@@ -137,7 +141,7 @@ const handleType = (data, schema, parentSchema) => {
 
 
 const handleMultipleTypes = (data, schema, parentSchema) => {
-	const hasComplexType = data.type.find(item => typeof item !== 'string');
+	const hasComplexType = data.type.some(isComplexType);
 
 	if (hasComplexType) {
 		parentSchema = getChoice(data, parentSchema);
@@ -146,6 +150,25 @@ const handleMultipleTypes = (data, schema, parentSchema) => {
 		const typeObjects = data.type.map(type => getType({}, data, type));
 		schema = Object.assign(schema, ...typeObjects);
 		schema.type = typeObjects.map(item => item.type);
+	}
+};
+
+const isComplexType = (type) => {
+	if (typeof type === 'string') {
+		return false;
+	}
+
+	const isNumber = [
+		'int',
+		'long',
+		'float',
+		'double',
+	].includes(type.type);
+
+	if (isNumber) {
+		return false;
+	} else {
+		return true;
 	}
 };
 
@@ -159,6 +182,10 @@ const removeChangedField = (parentSchema, name) => {
 };
 
 const getType = (schema, field, type) => {
+	if (Object(type) === type) {
+		return Object.assign({}, schema, type, getType(schema, field, type.type));
+	}
+
 	switch(type) {
 		case 'string':
 		case 'bytes':
@@ -188,6 +215,7 @@ const getType = (schema, field, type) => {
 };
 
 const moveOneofInAllof = (parentSchema) => {
+  parentSchema.additionalProperties = true;
 	parentSchema.allOf.push(getOneOfSubSchema(parentSchema.oneOf, { oneOf_meta: parentSchema.oneOf_meta }));
 
 	delete parentSchema.oneOf;
@@ -199,7 +227,7 @@ const moveOneofInAllof = (parentSchema) => {
 const getChoice = (data, parentSchema) => {
 	if (parentSchema.oneOf) {
 		if (!parentSchema.allOf) {
-			parentSchema = getAllOf(data, parentSchema);
+      parentSchema = getAllOf(data, parentSchema);
 		}
 
 		parentSchema = moveOneofInAllof(parentSchema);
@@ -291,8 +319,6 @@ const handleItems = (data, prop, schema) => {
 
 	if (typeof items === 'object') {
 		schema.items = {};
-		items.arrayItemName = items.name;
-		delete items.name;
 		handleRecursiveSchema(items, schema.items, schema);
 	} else {
 		schema.items = {
