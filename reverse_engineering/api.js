@@ -187,13 +187,22 @@ const getType = (schema, field, type) => {
 	}
 };
 
+const moveOneofInAllof = (parentSchema) => {
+	parentSchema.allOf.push(getOneOfSubSchema(parentSchema.oneOf, { oneOf_meta: parentSchema.oneOf_meta }));
+
+	delete parentSchema.oneOf;
+	delete parentSchema.oneOf_meta;
+	
+	return parentSchema;
+}
+
 const getChoice = (data, parentSchema) => {
 	if (parentSchema.oneOf) {
-		parentSchema = getAllOf(data, parentSchema);
-		parentSchema.allOf.push(getOneOfSubSchema(parentSchema.oneOf, { oneOf_meta: parentSchema.oneOf_meta }));
+		if (!parentSchema.allOf) {
+			parentSchema = getAllOf(data, parentSchema);
+		}
 
-		delete parentSchema.oneOf;
-		delete parentSchema.oneOf_meta;
+		parentSchema = moveOneofInAllof(parentSchema);
 	} else {
 		parentSchema.oneOf = [];
 
@@ -214,6 +223,10 @@ const getChoice = (data, parentSchema) => {
 				parentSchema.oneOf_meta = { name: name };
 			}
 		});
+
+		if (parentSchema.allOf) {
+			parentSchema = moveOneofInAllof(parentSchema);
+		}
 	}
 
 	return parentSchema;
