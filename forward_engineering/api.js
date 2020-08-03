@@ -637,7 +637,7 @@ const handleItems = (schema, avroSchema, udt) => {
 		avroSchema.items = Object.assign({}, avroSchema.items, avroSchema.items.type);
 	}
 
-	if (schemaItemName) {
+	if (schemaItemName && ['record', 'array', 'map', 'enum', 'fixed'].includes(avroSchema.items.type)) {
 		avroSchema.items.name = schemaItemName;
 	}
 };
@@ -829,7 +829,14 @@ const handleTargetProperties = (schema, avroSchema) => {
 	if (schema.type) {
 		const targetProperties = getTargetFieldLevelPropertyNames(schema.type, schema);
 		targetProperties.forEach(prop => {
-			avroSchema[prop] = schema[prop];
+			if (_.isString(prop)) {
+				return avroSchema[prop] = schema[prop];
+			}
+			const keyword = _.get(prop, 'propertyKeyword', '');
+			if (!keyword) {
+				return;
+			}
+			avroSchema[keyword] = schema[keyword];
 		});
 	}
 };
